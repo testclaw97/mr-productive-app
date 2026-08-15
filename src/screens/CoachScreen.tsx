@@ -22,6 +22,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -59,6 +60,11 @@ import {
   OVERTIME_OPTIN,
   PRIVACY_URL,
 } from "../copy";
+
+// The coach's chat avatar — the packaged Mr. Productive mascot (the app icon), the
+// same little face the Chrome extension fronts each coach turn with. A static bundled
+// asset via require(): it carries no user data and never becomes markup.
+const COACH_AVATAR = require("../../assets/icon.png");
 
 // On web there is no block-redirect handing us a `?site=`, so we demo the session
 // conversation against a representative site. On Android this comes from the
@@ -382,19 +388,32 @@ export default function CoachScreen() {
           </View>
         )}
 
-        {messages.map((m) => (
-          <View
-            key={m.id}
-            style={[styles.bubbleRow, m.who === "user" ? styles.rowUser : styles.rowCoach]}
-          >
-            <View style={[styles.bubble, m.who === "user" ? styles.bubbleUser : styles.bubbleCoach]}>
-              {/* Text ONLY — no HTML, so untrusted content can never become markup. */}
-              <Text style={m.who === "user" ? styles.bubbleUserText : styles.bubbleCoachText}>
-                {m.text}
-              </Text>
+        {messages.map((m) => {
+          const isCoach = m.who === "coach";
+          return (
+            <View
+              key={m.id}
+              style={[styles.bubbleRow, isCoach ? styles.rowCoach : styles.rowUser]}
+            >
+              {/* The round mascot avatar fronts each COACH turn only (never the user's),
+                  aligned to the bubble's left — mirroring the extension's [avatar][text]. */}
+              {isCoach && (
+                <Image
+                  source={COACH_AVATAR}
+                  style={styles.coachAvatar}
+                  accessibilityLabel="Mr. Productive"
+                  accessible={false}
+                />
+              )}
+              <View style={[styles.bubble, isCoach ? styles.bubbleCoach : styles.bubbleUser]}>
+                {/* Text ONLY — no HTML, so untrusted content can never become markup. */}
+                <Text style={isCoach ? styles.bubbleCoachText : styles.bubbleUserText}>
+                  {m.text}
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
 
         {status !== "" && <Text style={styles.status}>{status}</Text>}
 
@@ -579,9 +598,19 @@ const styles = StyleSheet.create({
   center: { alignItems: "center", justifyContent: "center", paddingVertical: 40, gap: 10 },
   dim: { color: colors.muted, fontSize: 13 },
 
-  bubbleRow: { marginBottom: 10, flexDirection: "row" },
+  bubbleRow: { marginBottom: 10, flexDirection: "row", alignItems: "flex-end" },
   rowUser: { justifyContent: "flex-end" },
   rowCoach: { justifyContent: "flex-start" },
+  // The round mascot avatar: fixed size, never shrinks, sits at the bubble's base-left.
+  coachAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: space.s1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    backgroundColor: colors.surface2,
+  },
   bubble: { maxWidth: "82%", paddingVertical: 10, paddingHorizontal: 14, borderRadius: radius.lg },
   bubbleCoach: {
     backgroundColor: colors.surface2,

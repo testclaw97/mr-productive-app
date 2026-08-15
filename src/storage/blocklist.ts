@@ -56,6 +56,26 @@ async function save(list: string[]): Promise<void> {
 }
 
 /**
+ * Replace the whole block list with an explicit set. Used by the Android app-picker,
+ * which owns the full set of blocked package names at once (toggle on/off). Entries are
+ * kept VERBATIM (no host normalization) — package ids are case-sensitive — but trimmed,
+ * de-duped, and order-preserved. Returns the cleaned, persisted list.
+ */
+export async function setBlocklist(list: string[]): Promise<string[]> {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of list) {
+    if (typeof item !== "string") continue;
+    const v = item.trim();
+    if (v === "" || seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+  }
+  await save(out);
+  return out;
+}
+
+/**
  * Add an entry. Returns the new list plus a `status`:
  *   "added"     — accepted and persisted
  *   "duplicate" — already present (no change)

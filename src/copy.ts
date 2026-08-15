@@ -28,8 +28,9 @@ export const CONSENT_LEAD =
 export const CONSENT_LINK_TEXT = "See our Privacy Policy";
 export const CONSENT_CONTINUE = "I understand — continue";
 
-// PLACEHOLDER — TJ swaps this for the real Privacy Policy URL before shipping.
-export const PRIVACY_URL = "https://PRIVACY_URL_PLACEHOLDER";
+// The live Privacy Policy (hosted alongside the coach backend). Opened as a plain
+// external link via Linking — the app never collects anything in-app.
+export const PRIVACY_URL = "https://mrproductive.lumieremedia.agency/privacy";
 
 // --- exhausted wall ---------------------------------------------------------------
 
@@ -52,6 +53,24 @@ export const BLOCKLIST_ANDROID_NOTE =
   "On Android, an app-picker will fill this from your installed apps, and the on-device blocker enforces it. On the web, desktop blocking stays with the Mr. Productive Chrome extension.";
 export const BLOCKLIST_EMPTY = "Nothing guarded yet. Add a site or app above.";
 export const BLOCKLIST_SUGGESTIONS = ["instagram.com", "tiktok.com", "youtube.com", "x.com", "reddit.com"];
+
+// --- blocklist: Android installed-app picker --------------------------------------
+export const BLOCKLIST_APP_INTRO =
+  "Choose which installed apps Mr. Productive should guard. Toggle an app on to block it — the on-device blocker enforces your choices.";
+export const BLOCKLIST_SEARCH_PLACEHOLDER = "Search your apps…";
+export const BLOCKLIST_BLOCKED_LABEL = "Blocked";
+export const BLOCKLIST_ALL_APPS_LABEL = "Your apps";
+export const BLOCKLIST_APPS_LOADING = "Reading your installed apps…";
+export const BLOCKLIST_NONE_BLOCKED = "No apps blocked yet. Toggle any app below to guard it.";
+export const BLOCKLIST_NO_MATCHES = "No apps match your search.";
+// Listing installed apps needs no permission, but be defensive if the query comes back empty.
+export const BLOCKLIST_APPS_EMPTY_HINT =
+  "Couldn't read your installed apps. If this keeps happening, open the Protect tab and grant Usage access, then come back.";
+
+// --- blocklist: web / iOS (no native blocker) -------------------------------------
+export const BLOCKLIST_UNSUPPORTED_TITLE = "App blocking is available on Android";
+export const BLOCKLIST_UNSUPPORTED_BODY =
+  "On Android, Mr. Productive can block the apps you install on your phone. On the web the desktop blocker stays with the Mr. Productive Chrome extension — you can still keep a list of sites/apps to guard below.";
 
 // --- settings / privacy -----------------------------------------------------------
 
