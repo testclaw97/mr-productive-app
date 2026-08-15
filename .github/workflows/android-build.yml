@@ -1,9 +1,9 @@
-name: Android APK (debug)
+name: Android APK (release)
 
-# Compile the app + the native mp-blocker Kotlin into an installable debug APK on a
-# FREE GitHub runner (Android SDK preinstalled). No Expo account, no local Android
-# toolchain — plain `expo prebuild` + `gradlew assembleDebug`. app-debug.apk is
-# debug-signed and sideloadable. Repo root IS the app (app-only push).
+# Build a STANDALONE installable release APK on a free GitHub runner. Release (not
+# debug) embeds the Hermes JS bundle inside the APK, so it runs without a Metro dev
+# server (a debug APK hangs on the splash on a real phone). Expo's release
+# signingConfig defaults to the debug keystore, so the APK stays sideloadable.
 
 on:
   workflow_dispatch: {}
@@ -28,14 +28,14 @@ jobs:
         run: npm ci
       - name: Expo prebuild (Android)
         run: npx expo prebuild -p android --no-install
-      - name: Gradle assembleDebug
+      - name: Gradle assembleRelease
         working-directory: android
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
-      - name: Upload debug APK
+          ./gradlew assembleRelease --no-daemon --stacktrace
+      - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
-          name: mr-productive-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: mr-productive-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
