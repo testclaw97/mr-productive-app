@@ -1,0 +1,30 @@
+// Gradle build for the local Expo module `mp-blocker` (Android-only).
+//
+// The heavy lifting (compileSdk, Kotlin toolchain, the expo-modules-core dependency,
+// the JSI/autolinking glue) is supplied by `expo-module-gradle-plugin`, which ships
+// inside expo-modules-core. Applying that plugin is what makes this a first-class Expo
+// native module rather than a bare AAR — so this file only declares the bits unique to
+// us: the namespace and the minimum SDK. Nothing here compiles locally; it is built in
+// the cloud by EAS (see app/eas.json + the module README).
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'agency.lumieremedia.mrproductive.mpblocker'
+version = '0.1.0'
+
+android {
+  namespace 'agency.lumieremedia.mrproductive.mpblocker'
+
+  defaultConfig {
+    // UsageStatsManager.queryEvents + TYPE_APPLICATION_OVERLAY are both available from
+    // API 21/23; we floor at 24 (the Expo/RN minimum) and special-case API 29/34 in code.
+    minSdkVersion 24
+  }
+
+  lintOptions {
+    // The manifest deliberately declares PACKAGE_USAGE_STATS / QUERY_ALL_PACKAGES /
+    // SYSTEM_ALERT_WINDOW — all flagged by lint but intentional (see AndroidManifest).
+    abortOnError false
+  }
+}

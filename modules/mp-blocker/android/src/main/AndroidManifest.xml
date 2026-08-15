@@ -1,0 +1,58 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      Permissions for the blocker. This manifest is MERGED into the host app's manifest
+      at build time, so declaring them here keeps the permission set co-located with the
+      code that needs it. Justifications (also required for the Play data-safety form):
+
+      · PACKAGE_USAGE_STATS  — read which app is in the foreground (UsageStatsManager).
+          A "special access" permission: the mere declaration does nothing; the user must
+          flip it on in Settings ▸ Usage access. `tools:ignore` silences the (correct)
+          lint note that apps can't request it at runtime — it is Settings-granted.
+      · SYSTEM_ALERT_WINDOW  — draw the full-screen block overlay over the guarded app.
+          Also Settings-granted ("Display over other apps").
+      · FOREGROUND_SERVICE + FOREGROUND_SERVICE_SPECIAL_USE (API 34+) — the poller runs as
+          a foreground service so Android doesn't kill it while it watches the foreground
+          app. "special use" is the honest FGS subtype: none of the pre-defined subtypes
+          (location, media, …) describe a self-control app-blocker.
+      · POST_NOTIFICATIONS    — the ongoing FGS notification requires runtime consent on
+          API 33+; without it the service can't show its persistent notice.
+      · QUERY_ALL_PACKAGES    — enumerate installed *launchable* apps so the user can pick
+          which ones to block (listInstalledApps). Play requires this permission (and a
+          Play Console declaration) for full package visibility; a self-control blocker
+          whose core function is "choose any app to block" is an accepted use.
+
+      WHY UsageStats + overlay and NOT an AccessibilityService:
+        An AccessibilityService can read the foreground app too, but Google Play's
+        accessibility policy forbids using that API for anything other than helping users
+        with disabilities and aggressively rejects/limits blocker-style use. UsageStats +
+        overlay is the Play-safe combination the major blockers ship, so we take that path
+        and never touch the accessibility API — no policy landmine.
+    -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <application>
+        <!--
+          The foreground service that polls the foreground app and owns the block overlay
+          + the grant timer. exported=false: only our own code may start it. The
+          specialUse subtype string is surfaced to Play reviewers as the human explanation
+          of what the FGS does.
+        -->
+        <service
+            android:name="agency.lumieremedia.mrproductive.mpblocker.BlockerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Self-control app blocker: watches the current foreground app and draws a user-configured block screen until the user earns time from their coach." />
+        </service>
+    </application>
+</manifest>

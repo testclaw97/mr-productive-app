@@ -1,0 +1,6 @@
+{
+  "platforms": ["android"],
+  "android": {
+    "modules": ["agency.lumieremedia.mrproductive.mpblocker.MpBlockerModule"]
+  }
+}
