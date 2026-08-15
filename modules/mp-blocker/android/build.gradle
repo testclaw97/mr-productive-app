@@ -21,15 +21,11 @@ android {
     // API 21/23; we floor at 24 (the Expo/RN minimum) and special-case API 29/34 in code.
     minSdkVersion 24
     // expo-module-gradle-plugin's publishing step reads android.defaultConfig.versionName
-    // (MavenPublicationExtension) — it must be defined or configuration fails.
+    // (MavenPublicationExtension) — it must be defined or configuration fails. The plugin
+    // ALREADY declares the 'release' publishing variant itself (applyPublishingVariant),
+    // so we must NOT add our own singleVariant('release') — that collides ("Using
+    // singleVariant publishing DSL multiple times ... is not allowed").
     versionName '0.1.0'
-  }
-
-  // Modern AGP (Gradle 9 / compileSdk 36 on the CI runner) no longer auto-creates the
-  // 'release' SoftwareComponent that the Expo autolinking publishing step consumes
-  // (components.release). Declare the published variant explicitly so it exists.
-  publishing {
-    singleVariant('release')
   }
 
   lintOptions {
