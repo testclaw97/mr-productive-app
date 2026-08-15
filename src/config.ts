@@ -11,10 +11,12 @@
 //   https://mrproductive.lumieremedia.agency
 //
 // Swap the constant (or wire it to an env/EAS build profile later) when shipping.
-export const BACKEND_URL = "http://100.123.255.8:4022";
+// NOW LIVE behind Cloudflare + nginx → the coach backend, so the app works on any
+// phone without Tailscale. (Was http://100.123.255.8:4022 — Tailscale-only.)
+export const BACKEND_URL = "https://mrproductive.lumieremedia.agency";
 
-// Production URL, kept here as documentation of the eventual target. Not used yet.
-export const PROD_BACKEND_URL = "https://mrproductive.lumieremedia.agency";
+// The old Tailnet-only dev URL, kept for reference.
+export const DEV_BACKEND_URL = "http://100.123.255.8:4022";
 
 // The "n of 3" soft hint shown next to the turn counter. The BACKEND hard-caps the
 // negotiation (NEGOTIATION_MAX_TURNS); this is only the cosmetic ceiling the coach
