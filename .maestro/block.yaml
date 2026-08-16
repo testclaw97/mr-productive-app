@@ -5,6 +5,11 @@ appId: agency.lumieremedia.mrproductive
 # NOTE: no clearState — pm clear wipes the adb-granted appops (usage access), which
 # leaves "Start protecting" disabled. The APK was freshly installed, so state is clean.
 - launchApp
+# Wait for the JS/UI to actually render before touching anything (the tab bar
+# 'Coach' label is a reliable "app is ready" marker).
+- extendedWaitUntil:
+    visible: "Coach"
+    timeout: 25000
 
 # First launch: accept the AI-consent gate if shown.
 - runFlow:
@@ -14,6 +19,9 @@ appId: agency.lumieremedia.mrproductive
       - tapOn: "I understand.*"
 
 # --- Block Chrome -----------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Blocklist"
+    timeout: 10000
 - tapOn: "Blocklist"
 - tapOn: "Search your apps.*"
 - inputText: "Chrome"

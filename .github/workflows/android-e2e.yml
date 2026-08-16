@@ -58,12 +58,14 @@ jobs:
             # Grant the two special-access appops (usage access + overlay). NOTE: the
             # Maestro flow must NOT use clearState:true — pm clear wipes these grants
             # (last run that reset usage-access to denied). Grant robustly + VERIFY.
-            adb shell appops set $PKG android:get_usage_stats allow || true
-            adb shell appops set $PKG GET_USAGE_STATS allow || true
-            adb shell appops set $PKG android:system_alert_window allow || true
-            adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
-            echo "=== appops after grant (want GET_USAGE_STATS: allow) ==="
-            adb shell appops get $PKG 2>&1 | grep -iE "USAGE|ALERT" || echo "(no matching ops printed)"
+            echo "=== granting appops (capture real errors, don't mask) ==="
+            adb shell appops set $PKG android:get_usage_stats allow 2>&1 || echo "form1 FAILED $?"
+            adb shell appops set $PKG GET_USAGE_STATS allow 2>&1 || echo "form2 FAILED $?"
+            adb shell cmd appops set $PKG android:get_usage_stats allow 2>&1 || echo "form3 FAILED $?"
+            adb shell appops set $PKG android:system_alert_window allow 2>&1 || echo "overlay FAILED $?"
+            adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS 2>&1 || echo "notif skip"
+            echo "=== FULL appops get $PKG ==="
+            adb shell appops get $PKG 2>&1 | head -50
             # Launch + a first screenshot proving it renders natively.
             adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 || true
             sleep 8
