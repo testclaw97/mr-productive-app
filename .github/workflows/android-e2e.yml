@@ -55,10 +55,15 @@ jobs:
             set -x
             PKG=agency.lumieremedia.mrproductive
             adb install -r apk/*.apk
-            # Grant the two special-access permissions the app would otherwise ask for.
+            # Grant the two special-access appops (usage access + overlay). NOTE: the
+            # Maestro flow must NOT use clearState:true — pm clear wipes these grants
+            # (last run that reset usage-access to denied). Grant robustly + VERIFY.
             adb shell appops set $PKG android:get_usage_stats allow || true
+            adb shell appops set $PKG GET_USAGE_STATS allow || true
             adb shell appops set $PKG android:system_alert_window allow || true
             adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
+            echo "=== appops after grant (want GET_USAGE_STATS: allow) ==="
+            adb shell appops get $PKG 2>&1 | grep -iE "USAGE|ALERT" || echo "(no matching ops printed)"
             # Launch + a first screenshot proving it renders natively.
             adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 || true
             sleep 8

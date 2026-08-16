@@ -2,8 +2,9 @@
 # Permissions (usage-access + overlay) are granted via adb before this runs.
 appId: agency.lumieremedia.mrproductive
 ---
-- launchApp:
-    clearState: true
+# NOTE: no clearState — pm clear wipes the adb-granted appops (usage access), which
+# leaves "Start protecting" disabled. The APK was freshly installed, so state is clean.
+- launchApp
 
 # First launch: accept the AI-consent gate if shown.
 - runFlow:
