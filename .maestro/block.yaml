@@ -38,10 +38,18 @@ appId: agency.lumieremedia.mrproductive
 # --- Start the on-device blocker -------------------------------------------
 - tapOn: "Protect"
 - takeScreenshot: 20-protect
+# There are TWO "Start protecting" texts (the card heading AND the button). The
+# heading is index 0, the button index 1 — tap the BUTTON, or the service never starts.
 - tapOn:
-    text: "Start protecting.*"
-    optional: true
+    text: "Start protecting"
+    index: 1
 - takeScreenshot: 21-protecting
+# Give the freshly-started foreground service a moment to spin up its 1s poller.
+- extendedWaitUntil:
+    visible: "Stop protecting.*"
+    timeout: 6000
+    optional: true
+- takeScreenshot: 22-after-start
 
 # --- Open the blocked app → the overlay should slam up ----------------------
 - launchApp:
