@@ -1,31 +1,32 @@
-# Human-like flow: block an app, then open it and prove the overlay fires.
-# The two special permissions are granted via adb (appops) in the workflow BEFORE
-# this runs, so we can go straight to blocking + starting the service.
+# Human-like flow: block Chrome, start protecting, open Chrome, prove the overlay fires.
+# Permissions (usage-access + overlay) are granted via adb before this runs.
 appId: agency.lumieremedia.mrproductive
 ---
 - launchApp:
     clearState: true
 
-# First launch lands on the Coach tab behind the AI-consent gate — accept it if shown.
+# First launch: accept the AI-consent gate if shown.
 - runFlow:
     when:
       visible: "I understand.*"
     commands:
       - tapOn: "I understand.*"
 
-# Go to the Blocklist tab and block Chrome (present on the google_apis emulator).
+# --- Block Chrome -----------------------------------------------------------
 - tapOn: "Blocklist"
-- takeScreenshot: 10-blocklist
-- tapOn:
-    text: ".*[Ss]earch.*"
-    optional: true
+- tapOn: "Search your apps.*"
 - inputText: "Chrome"
-- tapOn:
-    text: "Chrome"
+- hideKeyboard            # the keyboard was covering the tab bar + toggle
+- takeScreenshot: 10-search-chrome
+# Tap the ROW by its unique package subtitle (not the search field's "Chrome").
+- tapOn: "com.android.chrome"
+- takeScreenshot: 11-after-toggle
+# Confirm the toggle actually registered (guards the rest of the test).
+- assertVisible:
+    text: "BLOCKED \\(1\\)"
     optional: true
-- takeScreenshot: 11-blocked-chrome
 
-# Turn the protection service on.
+# --- Start the on-device blocker -------------------------------------------
 - tapOn: "Protect"
 - takeScreenshot: 20-protect
 - tapOn:
@@ -33,11 +34,15 @@ appId: agency.lumieremedia.mrproductive
     optional: true
 - takeScreenshot: 21-protecting
 
-# Now OPEN the blocked app — the overlay should slam up over it.
+# --- Open the blocked app → the overlay should slam up ----------------------
 - launchApp:
     appId: "com.android.chrome"
+- extendedWaitUntil:      # give the 1s foreground poller time to react
+    visible:
+      text: ".*([Bb]locked|coach|Productive).*"
+    timeout: 8000
+    optional: true
 - takeScreenshot: 30-opened-blocked-app
-# The native overlay says "Blocked" / "talk to your coach". Assert it appeared.
 - assertVisible:
     text: ".*([Bb]locked|coach).*"
     optional: true
