@@ -36,6 +36,7 @@ import {
 import { blocker } from "../native/Blocker";
 import type { InstalledApp } from "../native/Blocker";
 import { colors, radius, space } from "../theme";
+import PressableScale from "../ui/PressableScale";
 import {
   BLOCKLIST_ALL_APPS_LABEL,
   BLOCKLIST_ANDROID_NOTE,
@@ -363,7 +364,7 @@ export function WebBlocklist() {
           accessibilityLabel="Site or app to block"
           testID="blocklist-input"
         />
-        <Pressable
+        <PressableScale
           style={[styles.addBtn, !trimmed && styles.addBtnDisabled]}
           onPress={() => add(input)}
           disabled={!trimmed}
@@ -371,7 +372,7 @@ export function WebBlocklist() {
           testID="blocklist-add"
         >
           <Text style={styles.addBtnText}>Add</Text>
-        </Pressable>
+        </PressableScale>
       </View>
 
       {feedback !== "" && (
@@ -386,7 +387,7 @@ export function WebBlocklist() {
           <Text style={styles.suspectsLabel}>The usual suspects</Text>
           <View style={styles.chips}>
             {suggestions.map((s) => (
-              <Pressable
+              <PressableScale
                 key={s}
                 style={styles.chip}
                 onPress={() => add(s)}
@@ -394,7 +395,7 @@ export function WebBlocklist() {
                 accessibilityLabel={`Add ${s}`}
               >
                 <Text style={styles.chipText}>+ {s}</Text>
-              </Pressable>
+              </PressableScale>
             ))}
           </View>
         </View>

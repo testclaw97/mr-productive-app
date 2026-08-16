@@ -7,6 +7,68 @@
 // extension ships; TJ swaps them for the real URLs before shipping. They are plain
 // external links opened via Linking — nothing is ever collected in-app.
 
+// --- first-run onboarding (app-only; not shared with the extension) ----------------
+//
+// Four screens, one purpose each, value BEFORE commitment. The hook is a "focus report"
+// stat (Opal / one sec style) that reframes phone time as life time; the CTAs are warm,
+// low-friction, foot-in-the-door invitations.
+
+export const ONB_SKIP = "Skip";
+export const ONB_BACK = "Back";
+export const ONB_NEXT = "Next";
+
+// Screen 1 — welcome / hook
+export const ONB_WELCOME_KICKER = "Mr. Productive";
+export const ONB_WELCOME_TITLE = "Take your time back.";
+export const ONB_WELCOME_STAT_BIG = "4 hours a day";
+export const ONB_WELCOME_STAT_LEAD = "The average person spends about";
+export const ONB_WELCOME_STAT_TAIL =
+  "on their phone — roughly 9 years of a lifetime. Mr. Productive helps you spend it on purpose.";
+export const ONB_WELCOME_CTA = "Ready to take your time back?";
+
+// Screen 2 — pick distractions
+export const ONB_PICK_TITLE = "What steals your time?";
+export const ONB_PICK_SUB =
+  "Pick the apps that pull you in. Your coach guards these — you decide when they're worth it.";
+export const ONB_PICK_WEB_NOTE =
+  "On the web these are a preview. On Android, Mr. Productive guards the real apps on your phone; on desktop the Chrome extension guards the sites.";
+export const ONB_PICK_CTA = "These steal my time";
+export const ONB_PICK_SKIP = "I'll choose later";
+
+// The usual suspects, with friendly labels. Selecting one adds its domain to the block
+// list (dedup-safe) so the choice isn't lost when the flow ends.
+export const ONBOARDING_APPS: { label: string; glyph: string; entry: string }[] = [
+  { label: "Instagram", glyph: "📸", entry: "instagram.com" },
+  { label: "TikTok", glyph: "🎵", entry: "tiktok.com" },
+  { label: "YouTube", glyph: "▶️", entry: "youtube.com" },
+  { label: "X", glyph: "✖️", entry: "x.com" },
+  { label: "Reddit", glyph: "👽", entry: "reddit.com" },
+  { label: "Facebook", glyph: "👍", entry: "facebook.com" },
+  { label: "Snapchat", glyph: "👻", entry: "snapchat.com" },
+  { label: "Netflix", glyph: "🎬", entry: "netflix.com" },
+];
+
+// Screen 3 — turn on protection
+export const ONB_PROTECT_TITLE = "Turn on protection";
+export const ONB_PROTECT_SUB =
+  "Blocking for real needs two Android permissions. You grant each one in Settings — we only take you there, and nothing turns on without you.";
+export const ONB_PROTECT_USAGE_TITLE = "See which app is open";
+export const ONB_PROTECT_USAGE_WHY =
+  "So Mr. Productive knows when to step in. It never reads what you do inside an app — only which one is in front.";
+export const ONB_PROTECT_OVERLAY_TITLE = "Draw the block screen";
+export const ONB_PROTECT_OVERLAY_WHY =
+  "So Mr. Productive can hold the door on a blocked app until you've earned time from your coach.";
+export const ONB_PROTECT_WEB_TITLE = "Protection runs on Android";
+export const ONB_PROTECT_WEB_BODY =
+  "On Android, Mr. Productive blocks the apps on your phone. On desktop the Chrome extension does the blocking. Here on the web you can set your budget with the coach and build your list — install the Android app to switch real blocking on.";
+export const ONB_PROTECT_CTA = "Continue";
+
+// Screen 4 — you're protected (celebratory)
+export const ONB_DONE_TITLE = "You're all set.";
+export const ONB_DONE_BODY =
+  "When you open a blocked app, your coach helps you decide if it's worth it — and hands you a fair, timed session if it is. No shame, no permanent cage.";
+export const ONB_DONE_CTA = "Enter Mr. Productive";
+
 // --- negotiation openers ----------------------------------------------------------
 
 export const LIMIT_OPENER =

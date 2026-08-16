@@ -25,6 +25,7 @@ import { deleteData } from "../api/coach";
 import { getInstallId } from "../api/install";
 import { clearAiConsent } from "../storage/consent";
 import { colors, radius, space } from "../theme";
+import PressableScale from "../ui/PressableScale";
 import {
   DELETE_CANCEL,
   DELETE_CONFIRM_COPY,
@@ -101,7 +102,7 @@ export default function SettingsScreen() {
       </View>
 
       {/* Privacy policy link */}
-      <Pressable
+      <PressableScale
         style={styles.linkRow}
         onPress={openPrivacy}
         accessibilityRole="link"
@@ -109,7 +110,7 @@ export default function SettingsScreen() {
       >
         <Text style={styles.linkText}>{SETTINGS_PRIVACY_LINK}</Text>
         <Text style={styles.linkChevron}>→</Text>
-      </Pressable>
+      </PressableScale>
 
       {/* Delete my data — GDPR self-service, two-click confirm */}
       <View style={styles.dangerCard}>
@@ -124,7 +125,7 @@ export default function SettingsScreen() {
           <View style={styles.confirmBox}>
             <Text style={styles.confirmCopy}>{DELETE_CONFIRM_COPY}</Text>
             <View style={styles.confirmRow}>
-              <Pressable
+              <PressableScale
                 style={[styles.dangerBtn, busy && styles.btnDisabled]}
                 onPress={confirmDelete}
                 disabled={busy}
@@ -136,7 +137,7 @@ export default function SettingsScreen() {
                 ) : (
                   <Text style={styles.dangerBtnText}>{DELETE_CONFIRM_YES}</Text>
                 )}
-              </Pressable>
+              </PressableScale>
               <Pressable
                 style={[styles.ghostBtn, busy && styles.btnDisabled]}
                 onPress={() => setDel({ kind: "idle" })}
@@ -150,14 +151,14 @@ export default function SettingsScreen() {
           </View>
         ) : (
           <>
-            <Pressable
+            <PressableScale
               style={styles.dangerBtn}
               onPress={() => setDel({ kind: "confirming" })}
               accessibilityRole="button"
               testID="data-delete"
             >
               <Text style={styles.dangerBtnText}>{DELETE_TITLE}</Text>
-            </Pressable>
+            </PressableScale>
             {del.kind === "error" && (
               <Text style={styles.errLine} testID="delete-status">
                 {DELETE_FAILED}

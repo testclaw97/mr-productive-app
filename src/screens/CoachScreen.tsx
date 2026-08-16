@@ -45,6 +45,7 @@ import { hasAcceptedAiConsent, acceptAiConsent, subscribeAiConsent } from "../st
 import { blocker } from "../native/Blocker";
 import { SOFT_CAP } from "../config";
 import { colors, radius, space } from "../theme";
+import PressableScale from "../ui/PressableScale";
 import {
   COPY,
   COFFEE_ASK,
@@ -353,9 +354,12 @@ export default function CoachScreen() {
     >
       {/* Header — the coach is visibly present, like the extension's mascot. */}
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>MP</Text>
-        </View>
+        <Image
+          source={COACH_AVATAR}
+          style={styles.headerAvatar}
+          accessibilityLabel="Mr. Productive"
+          accessible={false}
+        />
         <View style={styles.headerTextWrap}>
           <Text style={styles.headerTitle}>Mr. Productive</Text>
           <Text style={styles.headerSubtitle}>your focus coach</Text>
@@ -420,13 +424,13 @@ export default function CoachScreen() {
         {/* Granted → the deliberate "Start browsing" confirmation. The coach's closing
             message stays on screen (rendered above as a bubble); nothing auto-proceeds. */}
         {phase === "granted" && grant && (
-          <Pressable
+          <PressableScale
             style={styles.primaryBtn}
             onPress={startBrowsing}
             accessibilityRole="button"
           >
             <Text style={styles.primaryBtnText}>Start browsing →</Text>
-          </Pressable>
+          </PressableScale>
         )}
 
         {/* Budget-exhausted wall. */}
@@ -449,14 +453,14 @@ export default function CoachScreen() {
             </Text>
             .
           </Text>
-          <Pressable
+          <PressableScale
             style={styles.primaryBtn}
             onPress={onAcceptConsent}
             accessibilityRole="button"
             testID="consent-continue"
           >
             <Text style={styles.primaryBtnText}>{CONSENT_CONTINUE}</Text>
-          </Pressable>
+          </PressableScale>
         </View>
       )}
 
@@ -570,15 +574,14 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.line,
     backgroundColor: colors.surface,
   },
-  avatar: {
+  headerAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.accent,
-    alignItems: "center",
-    justifyContent: "center",
+    borderRadius: radius.md,
+    backgroundColor: colors.surface2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.accentLine,
   },
-  avatarText: { color: colors.onAccent, fontWeight: "700", fontSize: 14 },
   headerTextWrap: { flex: 1, marginLeft: 12 },
   headerTitle: { color: colors.fg, fontSize: 16, fontWeight: "700" },
   headerSubtitle: { color: colors.muted, fontSize: 12, marginTop: 1 },

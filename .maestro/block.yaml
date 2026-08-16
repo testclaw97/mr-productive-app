@@ -5,11 +5,23 @@
 appId: agency.lumieremedia.mrproductive
 ---
 - launchApp
-# soft warm-up wait (won't fail the flow if slow)
+# v0.2.0 opens on the ONBOARDING flow first. Capture it, then Skip into the app.
 - extendedWaitUntil:
-    visible: "Coach"
+    visible: "Take your time back.*"
     timeout: 60000
     optional: true
+- takeScreenshot: 00-onboarding-welcome
+- runFlow:
+    when:
+      visible: "Skip"
+    commands:
+      - tapOn: "Skip"
+# now in the app — wait for the tab bar
+- extendedWaitUntil:
+    visible: "Coach"
+    timeout: 30000
+    optional: true
+- takeScreenshot: 01-home
 
 # Accept the AI-consent gate if it's up.
 - runFlow:

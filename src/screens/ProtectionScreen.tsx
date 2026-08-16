@@ -13,17 +13,11 @@
 // It re-checks permission state every time the app returns to the foreground (the user
 // leaves to Settings and comes back), so the statuses stay live without a manual refresh.
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  AppState,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { AppState, ScrollView, StyleSheet, Text, View } from "react-native";
 import { blocker } from "../native/Blocker";
 import { getBlocklist } from "../storage/blocklist";
 import { colors, radius, space } from "../theme";
+import PressableScale from "../ui/PressableScale";
 
 // Onboarding copy is Android-specific (NOT shared with the extension), so it lives here
 // rather than in the shared copy.ts.
@@ -161,16 +155,16 @@ export default function ProtectionScreen() {
                 : "Grant both permissions above first."}
             </Text>
             {state.running ? (
-              <Pressable
+              <PressableScale
                 style={[styles.btn, styles.btnGhost]}
                 onPress={stopProtecting}
                 accessibilityRole="button"
                 testID="protect-stop"
               >
                 <Text style={styles.btnGhostText}>Stop protecting</Text>
-              </Pressable>
+              </PressableScale>
             ) : (
-              <Pressable
+              <PressableScale
                 style={[styles.btn, styles.btnPrimary, (!bothGranted || starting) && styles.btnDisabled]}
                 onPress={startProtecting}
                 disabled={!bothGranted || starting}
@@ -180,7 +174,7 @@ export default function ProtectionScreen() {
                 <Text style={styles.btnPrimaryText}>
                   {starting ? "Starting…" : "Start protecting"}
                 </Text>
-              </Pressable>
+              </PressableScale>
             )}
           </View>
         </>
@@ -217,14 +211,14 @@ function PermissionCard(props: {
       </View>
       <Text style={styles.cardBody}>{props.why}</Text>
       {!props.granted && (
-        <Pressable
+        <PressableScale
           style={[styles.btn, styles.btnPrimary]}
           onPress={props.onGrant}
           accessibilityRole="button"
           testID={`${props.testID}-grant`}
         >
           <Text style={styles.btnPrimaryText}>Open Settings</Text>
-        </Pressable>
+        </PressableScale>
       )}
     </View>
   );

@@ -12,6 +12,8 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -171,52 +173,135 @@ class BlockerService : Service() {
         overlayForPackage = null
     }
 
-    /** A simple native block screen. No XML layout — built in code so the module stays self-contained. */
+    /**
+     * The native block screen. No XML layout — built in code (with [GradientDrawable]s for the
+     * background gradient, the round mascot badge and the rounded buttons) so the module stays
+     * self-contained and needs no `res/` assets. Styled to match the RN app's premium brand:
+     * deep-dark violet-accented palette, near-white heading, muted body, a filled-violet primary
+     * action and a quiet ghost secondary sitting in the lower third for thumb reach.
+     */
     private fun buildOverlayView(): View {
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
-        root.gravity = Gravity.CENTER
-        root.setBackgroundColor(Color.parseColor("#0d0d12")) // matches the app's colors.bg
-        root.setPadding(dp(32), dp(32), dp(32), dp(32))
+        root.gravity = Gravity.CENTER_HORIZONTAL
+        // Subtle vertical brand gradient (#14161c → #0b0d11), matching the app's dark surface.
+        root.background = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(
+                Color.parseColor("#14161c"),
+                Color.parseColor("#10121a"),
+                Color.parseColor("#0b0d11")
+            )
+        )
+        root.setPadding(dp(28), dp(28), dp(28), dp(28))
+
+        // Flexible top space so the mascot + copy sit a touch above centre.
+        root.addView(spacer(weight = 1.1f))
+
+        // --- Mr. Productive mark: a rounded violet avatar badge with the "MP" monogram -------
+        val badge = TextView(this)
+        badge.text = "MP"
+        badge.setTextColor(Color.WHITE)
+        badge.textSize = 30f
+        badge.setTypeface(Typeface.DEFAULT_BOLD)
+        badge.gravity = Gravity.CENTER
+        val badgeBg = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(Color.parseColor("#7d6dff"), Color.parseColor("#5b4bff"))
+        )
+        badgeBg.shape = GradientDrawable.OVAL
+        // Faint lighter ring so the badge reads as a crafted mark, not a flat blob.
+        badgeBg.setStroke(dp(2), Color.parseColor("#9a8dff"))
+        badge.background = badgeBg
+        LinearLayout.LayoutParams(dp(84), dp(84)).also {
+            it.gravity = Gravity.CENTER_HORIZONTAL
+            it.bottomMargin = dp(24)
+            badge.layoutParams = it
+        }
+        root.addView(badge)
 
         val title = TextView(this)
         title.text = "Blocked"
-        title.setTextColor(Color.parseColor("#f3f3f6"))
-        title.textSize = 32f
+        title.setTextColor(Color.parseColor("#e7e9ee"))
+        title.textSize = 34f
+        title.setTypeface(Typeface.DEFAULT_BOLD)
         title.gravity = Gravity.CENTER
+        root.addView(title)
 
         val body = TextView(this)
         body.text = "You asked Mr. Productive to guard this app.\nTalk to your coach to earn time."
-        body.setTextColor(Color.parseColor("#c8c8d4"))
+        body.setTextColor(Color.parseColor("#9aa0ad"))
         body.textSize = 16f
         body.gravity = Gravity.CENTER
-        (body.layoutParams as? LinearLayout.LayoutParams
-            ?: LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )).also {
-            it.topMargin = dp(16)
-            it.bottomMargin = dp(28)
-            body.layoutParams = it
-        }
-
-        val talk = Button(this)
-        talk.text = "Talk to your coach"
-        talk.setOnClickListener { openApp() }
-
-        val home = Button(this)
-        home.text = "Go to home screen"
-        (LinearLayout.LayoutParams(
+        body.setLineSpacing(dp(4).toFloat(), 1f)
+        LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
-        )).also { it.topMargin = dp(12); home.layoutParams = it }
-        home.setOnClickListener { goHome() }
-
-        root.addView(title)
+        ).also {
+            it.gravity = Gravity.CENTER_HORIZONTAL
+            it.topMargin = dp(14)
+            body.layoutParams = it
+        }
         root.addView(body)
+
+        // Larger flexible gap pushes the actions down into the thumb-reachable lower third.
+        root.addView(spacer(weight = 1.6f))
+
+        // --- Primary action: filled violet, white bold, rounded ------------------------------
+        val talk = Button(this)
+        talk.text = "Talk to your coach"
+        talk.isAllCaps = false
+        talk.textSize = 17f
+        talk.setTypeface(Typeface.DEFAULT_BOLD)
+        talk.setTextColor(Color.WHITE)
+        talk.stateListAnimator = null // drop the default material shadow/elevation animation
+        val talkBg = GradientDrawable()
+        talkBg.cornerRadius = dp(16).toFloat()
+        talkBg.setColor(Color.parseColor("#6c5cff"))
+        talk.background = talkBg
+        talk.setPadding(dp(24), dp(18), dp(24), dp(18))
+        LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).also { talk.layoutParams = it }
+        talk.setOnClickListener { openApp() }
         root.addView(talk)
+
+        // --- Secondary action: quiet ghost button (transparent + soft border) ----------------
+        val home = Button(this)
+        home.text = "Go to home screen"
+        home.isAllCaps = false
+        home.textSize = 16f
+        home.setTextColor(Color.parseColor("#9aa0ad"))
+        home.stateListAnimator = null
+        val homeBg = GradientDrawable()
+        homeBg.cornerRadius = dp(16).toFloat()
+        homeBg.setColor(Color.TRANSPARENT)
+        homeBg.setStroke(dp(1), Color.parseColor("#2a2e39"))
+        home.background = homeBg
+        home.setPadding(dp(24), dp(16), dp(24), dp(16))
+        LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).also { it.topMargin = dp(12); home.layoutParams = it }
+        home.setOnClickListener { goHome() }
         root.addView(home)
+
+        // Small fixed breathing room below the buttons.
+        LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(24)
+        ).also { root.addView(View(this).apply { layoutParams = it }) }
+
         return root
+    }
+
+    /** A zero-height, weighted flexible spacer used to distribute vertical space in the overlay. */
+    private fun spacer(weight: Float): View {
+        val v = View(this)
+        v.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, weight
+        )
+        return v
     }
 
     /** Launch the Mr. Productive app (its launcher activity) so the user can negotiate. */
