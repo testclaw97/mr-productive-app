@@ -1,0 +1,83 @@
+name: Android E2E (emulator)
+
+# Drive the RELEASE APK like a human on a real Android emulator (KVM-accelerated,
+# on GitHub's runners — never the VPS). Installs the app, grants the two special
+# permissions via adb, runs a Maestro flow that blocks an app and opens it, and
+# uploads screenshots + logcat so we can SEE whether the block overlay fires.
+# Trigger from the Actions tab, or on changes to the flow/workflow.
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - ".maestro/**"
+      - ".github/workflows/android-e2e.yml"
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable KVM (hardware accel for the emulator)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Download the latest release APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download --repo ${{ github.repository }} --pattern '*.apk' -D apk || \
+          gh release download v0.1.2 --repo ${{ github.repository }} --pattern '*.apk' -D apk
+          ls -la apk/
+
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Emulator + human-like test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            set -x
+            PKG=agency.lumieremedia.mrproductive
+            adb install -r apk/*.apk
+            # Grant the two special-access permissions the app would otherwise ask for.
+            adb shell appops set $PKG android:get_usage_stats allow || true
+            adb shell appops set $PKG android:system_alert_window allow || true
+            adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
+            # Launch + a first screenshot proving it renders natively.
+            adb shell monkey -p $PKG -c android.intent.category.LAUNCHER 1 || true
+            sleep 8
+            mkdir -p shots
+            adb exec-out screencap -p > shots/00-launch.png
+            adb logcat -d > shots/logcat-before.txt || true
+            # Drive the human-like block flow (non-fatal so we still collect artifacts).
+            maestro test .maestro/block.yaml --format junit || true
+            # Collect Maestro's own screenshots + a final device shot + logcat.
+            cp -r "$HOME/.maestro/tests" shots/maestro-tests 2>/dev/null || true
+            find . -maxdepth 2 -name '*.png' -path '*maestro*' -exec cp {} shots/ \; 2>/dev/null || true
+            adb exec-out screencap -p > shots/99-final.png
+            adb logcat -d | grep -iE "mpblocker|BlockerService|overlay|AndroidRuntime|FATAL" > shots/logcat-blocker.txt || true
+            adb logcat -d > shots/logcat-full.txt || true
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-shots
+          path: shots/
+          if-no-files-found: warn

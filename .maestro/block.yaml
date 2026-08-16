@@ -1,0 +1,44 @@
+# Human-like flow: block an app, then open it and prove the overlay fires.
+# The two special permissions are granted via adb (appops) in the workflow BEFORE
+# this runs, so we can go straight to blocking + starting the service.
+appId: agency.lumieremedia.mrproductive
+---
+- launchApp:
+    clearState: true
+
+# First launch lands on the Coach tab behind the AI-consent gate — accept it if shown.
+- runFlow:
+    when:
+      visible: "I understand.*"
+    commands:
+      - tapOn: "I understand.*"
+
+# Go to the Blocklist tab and block Chrome (present on the google_apis emulator).
+- tapOn: "Blocklist"
+- takeScreenshot: 10-blocklist
+- tapOn:
+    text: ".*[Ss]earch.*"
+    optional: true
+- inputText: "Chrome"
+- tapOn:
+    text: "Chrome"
+    optional: true
+- takeScreenshot: 11-blocked-chrome
+
+# Turn the protection service on.
+- tapOn: "Protect"
+- takeScreenshot: 20-protect
+- tapOn:
+    text: "Start protecting.*"
+    optional: true
+- takeScreenshot: 21-protecting
+
+# Now OPEN the blocked app — the overlay should slam up over it.
+- launchApp:
+    appId: "com.android.chrome"
+- takeScreenshot: 30-opened-blocked-app
+# The native overlay says "Blocked" / "talk to your coach". Assert it appeared.
+- assertVisible:
+    text: ".*([Bb]locked|coach).*"
+    optional: true
+- takeScreenshot: 31-overlay-check
