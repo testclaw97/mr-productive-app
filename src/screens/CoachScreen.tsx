@@ -35,7 +35,6 @@ import {
 } from "react-native";
 import {
   getState,
-  negotiateLimit,
   negotiateSession,
   type Grant,
   type SpentSite,
@@ -54,8 +53,10 @@ import {
   CONSENT_CONTINUE,
   CONSENT_LEAD,
   CONSENT_LINK_TEXT,
+  DEADLINE_COACH_GATE_BODY,
+  DEADLINE_COACH_GATE_CTA,
+  DEADLINE_COACH_GATE_TITLE,
   DONATE_URL,
-  LIMIT_OPENER,
   OVERTIME_BANNER,
   OVERTIME_OPENER,
   OVERTIME_OPTIN,
@@ -72,7 +73,10 @@ const COACH_AVATAR = require("../../assets/icon.png");
 // foreground-app detection (UsageStatsManager) instead.
 const DEMO_SITE = "instagram.com";
 
-type Phase = "loading" | "limit" | "session" | "overtime" | "granted" | "exhausted" | "error";
+// The daily deadline is NO LONGER negotiated in the coach — it's set with the quick
+// picker (SetDeadlineScreen). When the day needs a deadline the coach shows a short
+// "needLimit" gate that routes to the picker instead of running a limit conversation.
+type Phase = "loading" | "needLimit" | "session" | "overtime" | "granted" | "exhausted" | "error";
 type Who = "coach" | "user";
 interface ChatMessage {
   id: string;
@@ -92,7 +96,15 @@ interface WallInfo {
 let bubbleSeq = 0;
 const nextId = () => `m${bubbleSeq++}`;
 
-export default function CoachScreen() {
+export default function CoachScreen({
+  onNeedDeadline,
+  refreshSignal = 0,
+}: {
+  /** Open the quick deadline picker — the coach no longer negotiates the daily limit. */
+  onNeedDeadline?: () => void;
+  /** Bumped by the app shell after the daily deadline changes → re-boot the coach. */
+  refreshSignal?: number;
+} = {}) {
   const [phase, setPhase] = useState<Phase>("loading");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -125,9 +137,19 @@ export default function CoachScreen() {
   }, []);
 
   // --- boot: load consent, ask the coach where we stand, open the right screen ------
+  // Re-runs when refreshSignal changes (after the deadline picker sets today's budget),
+  // so the coach moves off the "needLimit" gate into the session conversation.
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Reset the transcript on a re-boot so we don't stack a second opener.
+      setMessages([]);
+      setGrant(null);
+      setWall(null);
+      setStatus("");
+      setTurns(0);
+      conversationIdRef.current = null;
+
       const [installId, accepted] = await Promise.all([
         getInstallId(),
         hasAcceptedAiConsent(),
@@ -146,10 +168,9 @@ export default function CoachScreen() {
         return;
       }
 
+      // Needs a deadline → the picker owns this now. Show the short gate, not a chat.
       if (state.needsLimit) {
-        conversationIdRef.current = null; // server mints one on turn 1
-        addBubble("coach", LIMIT_OPENER);
-        setPhaseBoth("limit");
+        setPhaseBoth("needLimit");
         return;
       }
 
@@ -176,7 +197,7 @@ export default function CoachScreen() {
     return () => {
       cancelled = true;
     };
-  }, [addBubble, setPhaseBoth]);
+  }, [addBubble, setPhaseBoth, refreshSignal]);
 
   // Keep the newest turn in view whenever the transcript grows.
   useEffect(() => {
@@ -256,7 +277,7 @@ export default function CoachScreen() {
     // no typed message reaches the coach before the notice is acknowledged.
     if (!consentRef.current) return;
     const sentPhase = phaseRef.current;
-    if (sentPhase !== "limit" && sentPhase !== "session" && sentPhase !== "overtime") return;
+    if (sentPhase !== "session" && sentPhase !== "overtime") return;
     const text = input.trim();
     if (text === "") return;
     const installId = installIdRef.current;
@@ -268,31 +289,6 @@ export default function CoachScreen() {
     setStatus("");
 
     const conversationId = conversationIdRef.current ?? undefined;
-
-    if (sentPhase === "limit") {
-      const reply = await negotiateLimit({ installId, text, conversationId });
-      setBusy(false);
-      if (!reply.ok) {
-        setStatus(reply.error === "BACKEND_UNREACHABLE" ? COPY.unreachable : COPY.generic);
-        setPhaseBoth("error");
-        return;
-      }
-      conversationIdRef.current = reply.conversationId;
-      if (reply.reply) addBubble("coach", reply.reply);
-      setTurns(reply.turns);
-      // Limit concluded WITH a set value → fresh conversation for the session.
-      if (typeof reply.dailyLimitMin === "number") {
-        conversationIdRef.current = null;
-        setTurns(0);
-        addBubble(
-          "coach",
-          `Your budget's set: ${reply.dailyLimitMin} min a day. You're at ${DEMO_SITE}. ` +
-            `How long do you want, and for what?`
-        );
-        setPhaseBoth("session");
-      }
-      return;
-    }
 
     // sentPhase === "session" | "overtime". Overtime threads the borrowed-time flag;
     // a grant comes back in the normal shape (plus overtime:true) and is handed off
@@ -308,11 +304,12 @@ export default function CoachScreen() {
     setBusy(false);
     if (!reply.ok) {
       if (reply.error === "NEEDS_LIMIT") {
-        // Day rolled over / limit cleared — fall back to the limit conversation.
+        // Day rolled over / limit cleared — the deadline picker owns setting it now, so
+        // drop back to the short gate that routes there (no limit conversation anymore).
         conversationIdRef.current = null;
         setTurns(0);
-        addBubble("coach", LIMIT_OPENER);
-        setPhaseBoth("limit");
+        setMessages([]);
+        setPhaseBoth("needLimit");
         return;
       }
       if (reply.error === "BUDGET_EXHAUSTED") {
@@ -341,7 +338,7 @@ export default function CoachScreen() {
     setTurns(reply.turns);
   }, [busy, input, addBubble, onGranted, setPhaseBoth]);
 
-  const inConversation = phase === "limit" || phase === "session" || phase === "overtime";
+  const inConversation = phase === "session" || phase === "overtime";
   // The composer shows only during a conversation AND only once consent is accepted;
   // otherwise the consent notice takes its place.
   const showComposer = inConversation && consentAccepted === true;
@@ -431,6 +428,24 @@ export default function CoachScreen() {
           >
             <Text style={styles.primaryBtnText}>Start browsing →</Text>
           </PressableScale>
+        )}
+
+        {/* Needs-a-deadline gate — the daily budget is set with the quick picker now,
+            NOT negotiated here. Route the user there before any session. */}
+        {phase === "needLimit" && (
+          <View style={styles.gate}>
+            <Text style={styles.gateTitle}>{DEADLINE_COACH_GATE_TITLE}</Text>
+            <Text style={styles.gateBody}>{DEADLINE_COACH_GATE_BODY}</Text>
+            <PressableScale
+              style={styles.primaryBtn}
+              onPress={() => onNeedDeadline?.()}
+              accessibilityRole="button"
+              accessibilityLabel={DEADLINE_COACH_GATE_CTA}
+              testID="coach-set-deadline"
+            >
+              <Text style={styles.primaryBtnText}>{DEADLINE_COACH_GATE_CTA}</Text>
+            </PressableScale>
+          </View>
         )}
 
         {/* Budget-exhausted wall. */}
@@ -640,6 +655,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   primaryBtnText: { color: colors.onAccent, fontSize: 16, fontWeight: "700" },
+
+  // Needs-a-deadline gate (routes to the quick picker)
+  gate: {
+    marginTop: space.s1,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    padding: space.s2,
+    gap: 8,
+  },
+  gateTitle: { color: colors.fg, fontSize: 18, fontWeight: "700" },
+  gateBody: { color: colors.fg2, fontSize: 14, lineHeight: 20 },
 
   // Consent gate
   consent: {

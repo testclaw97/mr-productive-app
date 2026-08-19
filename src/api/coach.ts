@@ -168,6 +168,36 @@ export function negotiateSession(args: NegotiateSessionArgs): Promise<SessionRes
   return postJson<SessionNegotiateResponse>("/api/v2/session/negotiate", body);
 }
 
+/**
+ * POST /api/v2/limit/set success response — the DIRECT daily-deadline set (the quick
+ * picker; no coach, no brain call). The server clamps `minutes` to [10,120] and freezes
+ * it for the local day: a same-day re-set returns the ALREADY-stored value, so
+ * `dailyLimitMin` may differ from what was requested. The caller compares the two to
+ * detect "already locked today".
+ */
+export interface LimitSetResponse {
+  ok: true;
+  dailyLimitMin: number; // the stored, clamped, frozen-for-day value
+  spentTodayMin: number;
+  remainingMin: number;
+}
+
+export type LimitSetResult = LimitSetResponse | ErrorResponse;
+
+/**
+ * Set today's daily deadline DIRECTLY (the quick picker replaces the coach limit
+ * negotiation). The server clamps to [10,120] and freezes it for the local day — a
+ * re-set the same day returns the stored value unchanged, so callers must treat the
+ * returned `dailyLimitMin` (not the requested `minutes`) as the truth.
+ */
+export function setLimit(
+  installId: string,
+  minutes: number,
+  tzOffsetMin = deviceTzOffsetMin()
+): Promise<LimitSetResult> {
+  return postJson<LimitSetResponse>("/api/v2/limit/set", { installId, minutes, tzOffsetMin });
+}
+
 /** POST /api/v2/data/delete success response. `deleted` is the server's row count. */
 export interface DataDeleteResponse {
   ok: true;

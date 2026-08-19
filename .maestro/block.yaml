@@ -16,12 +16,35 @@ appId: agency.lumieremedia.mrproductive
       visible: "Skip"
     commands:
       - tapOn: "Skip"
+# v0.2.1: on a new day / not-set, the "Set today's deadline" picker surfaces over
+# Home. Capture it, Lock it in (verifies the daily picker on-device), then continue.
+- extendedWaitUntil:
+    visible: "Set today's deadline.*"
+    timeout: 30000
+    optional: true
+- takeScreenshot: 02-deadline-picker
+- runFlow:
+    when:
+      visible: "Lock it in"
+    commands:
+      - tapOn: "Lock it in"
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 8000
+    optional: true
+- takeScreenshot: 03-locked
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+
 # now in the app — wait for the tab bar
 - extendedWaitUntil:
     visible: "Coach"
     timeout: 30000
     optional: true
-- takeScreenshot: 01-home
+- takeScreenshot: 04-home
 
 # Accept the AI-consent gate if it's up.
 - runFlow:

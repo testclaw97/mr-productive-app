@@ -38,8 +38,14 @@ type Load =
 
 export default function DashboardScreen({
   onNavigate,
+  onSetDeadline,
+  refreshSignal = 0,
 }: {
   onNavigate?: (target: NavTarget) => void;
+  /** Open the quick deadline picker (replaces the old "set it with your coach" path). */
+  onSetDeadline?: () => void;
+  /** Bumped by the app shell after the daily deadline changes → re-fetch state. */
+  refreshSignal?: number;
 }) {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [guarded, setGuarded] = useState<number>(0);
@@ -69,7 +75,8 @@ export default function DashboardScreen({
     return () => {
       cancelled = true;
     };
-  }, [fetchState]);
+    // refreshSignal is a dependency so a deadline set elsewhere refreshes the budget here.
+  }, [fetchState, refreshSignal]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -157,7 +164,7 @@ export default function DashboardScreen({
           </PressableScale>
         </View>
       ) : (
-        <BudgetSection state={load.state} onNavigate={onNavigate} />
+        <BudgetSection state={load.state} onSetDeadline={onSetDeadline} />
       )}
 
       {/* Stat tiles — Streak / Sessions are LOCAL counters not tracked yet: honest "—". */}
@@ -176,10 +183,10 @@ export default function DashboardScreen({
 
 function BudgetSection({
   state,
-  onNavigate,
+  onSetDeadline,
 }: {
   state: StateResponse;
-  onNavigate?: (target: NavTarget) => void;
+  onSetDeadline?: () => void;
 }) {
   const needsLimit = state.needsLimit || typeof state.dailyLimitMin !== "number";
   const limit = typeof state.dailyLimitMin === "number" ? state.dailyLimitMin : 0;
@@ -203,16 +210,17 @@ function BudgetSection({
           <>
             <Text style={styles.budgetBig}>Not set yet</Text>
             <Text style={styles.tileSub}>
-              Your coach sets your daily budget the first time you negotiate a session.
+              Pick today's distraction budget yourself — once you lock it, it's set until
+              tomorrow.
             </Text>
             <PressableScale
-              onPress={() => onNavigate?.("coach")}
+              onPress={() => onSetDeadline?.()}
               accessibilityRole="button"
-              accessibilityLabel="Set your budget with the coach"
+              accessibilityLabel="Set today's deadline"
               testID="home-set-budget"
               style={styles.budgetBtn}
             >
-              <Text style={styles.budgetBtnText}>Set it with your coach →</Text>
+              <Text style={styles.budgetBtnText}>Set today's deadline →</Text>
             </PressableScale>
           </>
         ) : (

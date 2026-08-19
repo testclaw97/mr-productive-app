@@ -31,8 +31,12 @@ import DashboardScreen from "./src/screens/DashboardScreen";
 import BlocklistScreen from "./src/screens/BlocklistScreen";
 import ProtectionScreen from "./src/screens/ProtectionScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
+import SetDeadlineScreen, { type DeadlineDoneResult } from "./src/screens/SetDeadlineScreen";
 import OnboardingFlow from "./src/onboarding/OnboardingFlow";
 import { hasCompletedOnboarding } from "./src/storage/onboarding";
+import { getState } from "./src/api/coach";
+import { getInstallId } from "./src/api/install";
+import { DEADLINE_TO_COACH } from "./src/copy";
 import { colors, type as typeScale } from "./src/theme";
 import Mascot from "./src/ui/Mascot";
 
@@ -73,57 +77,126 @@ function TabPage({ active, children }: { active: boolean; children: React.ReactN
   );
 }
 
+// Where the deadline picker should return the user once it's finished. `null` = stay
+// put (the app-open daily prompt, or the Home CTA — both land back on Home).
+type DeadlineState = { visible: boolean; returnTo: Tab | null };
+
 function AppShell() {
   const [tab, setTab] = useState<Tab>("home");
+  // Bumped whenever the daily deadline changes, so the mounted Home + Coach screens
+  // re-fetch state (they read /api/v2/state only at boot) and reflect the new budget.
+  const [refreshSignal, setRefreshSignal] = useState(0);
+  const [deadline, setDeadline] = useState<DeadlineState>({ visible: false, returnTo: null });
   const insets = useSafeAreaInsets();
 
   const navigate = useCallback((target: Tab) => setTab(target), []);
 
+  // Open the quick deadline picker. `returnTo` is the tab to land on after a successful
+  // lock (e.g. "coach" when the user came to negotiate a session).
+  const openDeadline = useCallback((returnTo: Tab | null) => {
+    setDeadline({ visible: true, returnTo });
+  }, []);
+
+  // APP-OPEN ROUTING: on launch (post-onboarding) ask the coach backend where we stand.
+  // Because the daily budget re-negotiates each new LOCAL day, `needsLimit` is the
+  // natural daily prompt — surface the picker over Home so the user sets today's
+  // deadline before anything else (this also covers the blocked-app entry, which just
+  // opens the app and lands here). Fail-soft: any error just shows the normal Home.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const installId = await getInstallId();
+      const state = await getState(installId);
+      if (cancelled || !state.ok) return;
+      if (state.needsLimit) openDeadline(null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [openDeadline]);
+
+  const onDeadlineDone = useCallback(
+    (_result: DeadlineDoneResult) => {
+      const returnTo = deadline.returnTo;
+      setDeadline({ visible: false, returnTo: null });
+      // Nudge the mounted screens to re-read state so the new budget shows immediately.
+      setRefreshSignal((n) => n + 1);
+      if (returnTo) setTab(returnTo);
+    },
+    [deadline.returnTo]
+  );
+
+  const closeDeadline = useCallback(() => {
+    setDeadline({ visible: false, returnTo: null });
+  }, []);
+
   return (
     // Pad the top by the notch inset so every screen's header clears the cutout.
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={styles.root}>
       <StatusBar style="light" />
 
-      <View style={styles.body}>
-        <TabPage active={tab === "home"}>
-          <DashboardScreen onNavigate={navigate} />
-        </TabPage>
-        <TabPage active={tab === "coach"}>
-          <CoachScreen />
-        </TabPage>
-        <TabPage active={tab === "blocklist"}>
-          <BlocklistScreen />
-        </TabPage>
-        <TabPage active={tab === "protect"}>
-          <ProtectionScreen />
-        </TabPage>
-        <TabPage active={tab === "settings"}>
-          <SettingsScreen />
-        </TabPage>
+      <View style={[styles.appLayer, { paddingTop: insets.top }]}>
+        <View style={styles.body}>
+          <TabPage active={tab === "home"}>
+            <DashboardScreen
+              onNavigate={navigate}
+              onSetDeadline={() => openDeadline(null)}
+              refreshSignal={refreshSignal}
+            />
+          </TabPage>
+          <TabPage active={tab === "coach"}>
+            <CoachScreen
+              onNeedDeadline={() => openDeadline("coach")}
+              refreshSignal={refreshSignal}
+            />
+          </TabPage>
+          <TabPage active={tab === "blocklist"}>
+            <BlocklistScreen />
+          </TabPage>
+          <TabPage active={tab === "protect"}>
+            <ProtectionScreen />
+          </TabPage>
+          <TabPage active={tab === "settings"}>
+            <SettingsScreen />
+          </TabPage>
+        </View>
+
+        {/* Bottom tab bar — extra bottom padding clears the home indicator / gesture bar. */}
+        <View style={[styles.tabBar, { paddingBottom: 10 + insets.bottom }]}>
+          {TABS.map((t) => {
+            const active = tab === t.key;
+            return (
+              <Pressable
+                key={t.key}
+                style={({ pressed }) => [styles.tabItem, pressed && styles.tabItemPressed]}
+                onPress={() => setTab(t.key)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={t.label}
+                testID={`tab-${t.key}`}
+              >
+                <View style={[styles.tabGlyphWrap, active && styles.tabGlyphWrapActive]}>
+                  <Text style={[styles.tabGlyph, active && styles.tabGlyphActive]}>{t.glyph}</Text>
+                </View>
+                <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{t.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
-      {/* Bottom tab bar — extra bottom padding clears the home indicator / gesture bar. */}
-      <View style={[styles.tabBar, { paddingBottom: 10 + insets.bottom }]}>
-        {TABS.map((t) => {
-          const active = tab === t.key;
-          return (
-            <Pressable
-              key={t.key}
-              style={({ pressed }) => [styles.tabItem, pressed && styles.tabItemPressed]}
-              onPress={() => setTab(t.key)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={t.label}
-              testID={`tab-${t.key}`}
-            >
-              <View style={[styles.tabGlyphWrap, active && styles.tabGlyphWrapActive]}>
-                <Text style={[styles.tabGlyph, active && styles.tabGlyphActive]}>{t.glyph}</Text>
-              </View>
-              <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{t.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {/* The quick deadline picker — a full-screen layer over everything (tab bar too).
+          Shown at every "needs a deadline" moment: app open on a new day, the Home CTA,
+          the Coach's "set your deadline first" gate. */}
+      {deadline.visible && (
+        <View style={styles.deadlineLayer}>
+          <SetDeadlineScreen
+            onDone={onDeadlineDone}
+            onClose={closeDeadline}
+            doneLabel={deadline.returnTo === "coach" ? DEADLINE_TO_COACH : undefined}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -169,6 +242,17 @@ export default function App() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
+  appLayer: { flex: 1 },
+  // The deadline picker sits above the app (tab bar included) on its own opaque layer.
+  deadlineLayer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.bg,
+    zIndex: 10,
+  },
   body: { flex: 1 },
   // Absolute-fill each page so the inactive (display:none) ones don't consume layout.
   page: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },

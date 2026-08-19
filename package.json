@@ -1,6 +1,6 @@
 {
   "name": "mr-productive-app",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Mr. Productive cross-platform app (Expo/React Native) — web + Android; iOS later. Shares the coach-budget backend with the extension.",
   "main": "index.ts",
   "private": true,
@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/slider": "5.2.0",
     "expo": "~57.0.13",
     "expo-crypto": "~57.0.1",
     "expo-splash-screen": "~57.0.6",

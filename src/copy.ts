@@ -69,6 +69,35 @@ export const ONB_DONE_BODY =
   "When you open a blocked app, your coach helps you decide if it's worth it — and hands you a fair, timed session if it is. No shame, no permanent cage.";
 export const ONB_DONE_CTA = "Enter Mr. Productive";
 
+// --- set today's deadline (the quick picker; replaces the coach limit negotiation) --
+//
+// The user picks their own daily distraction budget with a slider — no chat. The set is
+// FROZEN for the day (the backend refuses a same-day change), so the copy is a small,
+// deliberate commitment moment, not a shaming one.
+
+export const DEADLINE_TITLE = "Set today's deadline";
+export const DEADLINE_SUB =
+  "How much distraction time do you get today? Once you lock it, it's set until tomorrow.";
+export const DEADLINE_UNIT = "min";
+export const DEADLINE_PRESETS = [30, 45, 60, 90];
+export const DEADLINE_LOCK_CTA = "Lock it in";
+export const DEADLINE_LOCKING = "Locking…";
+export const DEADLINE_COMMITMENT = "You can't raise it later today — that's the point.";
+export const DEADLINE_LOCKED_TITLE = "Locked in";
+export const DEADLINE_LOCKED_SUB = "That's your distraction budget for today. See you tomorrow.";
+// FROZEN read-only state — the day's deadline is already set.
+export const DEADLINE_FROZEN_LABEL = "Today's deadline";
+export const DEADLINE_FROZEN_RESET = "resets tomorrow";
+export const DEADLINE_FROZEN_NOTE =
+  "You've already set today's deadline. It's frozen until tomorrow — that's how it keeps its edge.";
+export const DEADLINE_CONTINUE = "Continue";
+export const DEADLINE_TO_COACH = "Talk to your coach";
+// The Coach's "set your deadline first" gate (shown in place of the limit negotiation).
+export const DEADLINE_COACH_GATE_TITLE = "Set your deadline first";
+export const DEADLINE_COACH_GATE_BODY =
+  "Before your coach hands you any time, pick today's distraction budget. It takes five seconds.";
+export const DEADLINE_COACH_GATE_CTA = "Set today's deadline";
+
 // --- negotiation openers ----------------------------------------------------------
 
 export const LIMIT_OPENER =
